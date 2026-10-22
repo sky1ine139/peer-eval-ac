@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小组互评 · 自动控制原理</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: #eef1f6;
+    color: #1f2937;
+    min-height: 100vh;
+    padding: 16px 14px 40px;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+
+  /* 头部 */
+  .header {
+    background: linear-gradient(135deg, #1e5aa8 0%, #2d7dd2 100%);
+    border-radius: 14px;
+    padding: 20px 20px 18px;
+    color: #fff;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 16px rgba(30, 90, 168, 0.22);
+  }
+  .header h1 { font-size: 19px; font-weight: 600; letter-spacing: 0.5px; }
+  .header .sub { font-size: 12.5px; opacity: 0.88; margin-top: 5px; }
+
+  /* 卡片 */
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 10px rgba(31, 41, 55, 0.07);
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e5aa8;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .card-title::before {
+    content: "";
+    width: 3.5px; height: 15px;
+    background: #2d7dd2;
+    border-radius: 2px;
+  }
+  .hint { font-size: 12.5px; color: #6b7280; margin-bottom: 14px; line-height: 1.55; }
+
+  /* 姓名选择 */
+  .name-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+  }
+  .name-btn {
+    padding: 11px 4px;
+    border: 1.5px solid #d8dee9;
+    background: #fafbfd;
+    border-radius: 9px;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .name-btn:active { transform: scale(0.96); }
+  .name-btn.selected {
+    background: #2d7dd2;
+    border-color: #2d7dd2;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(45, 125, 210, 0.32);
+  }
+  .name-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* 打分表 */
+  .score-row {
+    display: flex;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid #f0f2f6;
+  }
+  .score-row:last-child { border-bottom: none; }
+  .score-name {
+    flex: 0 0 auto;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: #1f2937;
+    min-width: 76px;
+  }
+  .score-input-wrap { flex: 1; display: flex; align-items: center; gap: 10px; }
+  input[type="number"] {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 15px;
+    border: 1.5px solid #d8dee9;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+    color: #1f2937;
+    background: #fafbfd;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"]:focus {
+    border-color: #2d7dd2;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(45, 125, 210, 0.12);
+  }
+  input[type="number"].invalid {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+
+  /* 按钮 */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 15.5px;
+    font-weight: 600;
+    border: none;
+    border-radius: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #1e5aa8, #2d7dd2);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(45, 125, 210, 0.3);
+  }
+  .btn-primary:active { transform: scale(0.985); }
+  .btn-primary:disabled {
+    background: #c5cbd6;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  /* 提示条 */
+  .alert {
+    padding: 11px 14px;
+    border-radius: 9px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    line-height: 1.55;
+  }
+  .alert-info { background: #eff6ff; color: #1e5aa8; border-left: 3px solid #2d7dd2; }
+  .alert-warn { background: #fffbeb; color: #92400e; border-left: 3px solid #f59e0b; }
+  .alert-error { background: #fef2f2; color: #991b1b; border-left: 3px solid #ef4444; }
+  .alert-success { background: #f0fdf4; color: #166534; border-left: 3px solid #22c55e; }
+
+  /* 提交成功页 */
+  .done-screen { text-align: center; padding: 26px 8px 10px; }
+  .done-icon {
+    width: 62px; height: 62px;
+    border-radius: 50%;
+    background: #f0fdf4;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 30px;
+  }
+  .done-screen h2 { font-size: 18px; color: #166534; margin-bottom: 8px; }
+  .done-screen p { font-size: 13.5px; color: #6b7280; line-height: 1.7; }
+
+  .hidden { display: none !important; }
+
+  /* 进度 */
+  .progress-text {
+    font-size: 12.5px;
+    color: #6b7280;
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  /* 汇总表 */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  .summary-table th {
+    background: #f5f7fa;
+    padding: 9px 6px;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #2d7dd2;
+    text-align: center;
+  }
+  .summary-table td {
+    padding: 8px 6px;
+    text-align: center;
+    border-bottom: 1px solid #f0f2f6;
+    color: #374151;
+  }
+  .summary-table td.name { text-align: left; font-weight: 500; }
+  .summary-table .final { color: #1e5aa8; font-weight: 700; }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11.5px;
+    color: #9ca3af;
+    margin-top: 18px;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 头部 -->
+  <div class="header">
+    <h1>小组互评</h1>
+    <div class="sub">《自动控制原理》讨论作业 · 自动化 24-2 班</div>
+  </div>
+
+  <!-- 第一步：选择自己 -->
+  <div id="step-choose">
+    <div class="card">
+      <div class="card-title">第一步：选择你的名字</div>
+      <div class="hint">请点击你自己的名字。选择后将对本组其余 12 位同学打分。</div>
+      <div class="name-grid" id="name-grid"></div>
+    </div>
+
+    <div id="already-tip" class="alert alert-warn hidden">
+      你已提交过评分，本次提交已锁定。如需修改，请联系组长。
+    </div>
+  </div>
+
+  <!-- 第二步：打分 -->
+  <div id="step-score" class="hidden">
+    <div class="card">
+      <div class="card-title">第二步：为组员打分</div>
+      <div class="hint">
+        当前评分人：<strong id="cur-name" style="color:#1e5aa8;"></strong>　
+        <a href="#" id="reselect" style="font-size:12.5px;color:#6b7280;">（不是我，重新选择）</a>
+      </div>
+      <div class="alert alert-info">
+        请为每位组员打 <strong>0～100 分</strong>，可保留一位小数。<br>
+        打分依据：课堂参与、任务承担、协作贡献等综合表现。
+      </div>
+      <div id="score-list"></div>
+      <div class="progress-text" id="progress-text">已完成 0 / 12</div>
+    </div>
+
+    <div id="submit-error" class="alert alert-error hidden"></div>
+
+    <button class="btn btn-primary" id="submit-btn" disabled>提交评分</button>
+    <div class="footer-note">
+      提交后不可修改，请确认无误。<br>
+      评分仅用于组内互评统计，不会公开个人打分明细。
+    </div>
+  </div>
+
+  <!-- 提交成功 -->
+  <div id="step-done" class="hidden">
+    <div class="card">
+      <div class="done-screen">
+        <div class="done-icon">✓</div>
+        <h2>提交成功</h2>
+        <p>感谢你的参与，你的评分已记录。<br>可以关闭此页面。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 教师端：汇总 -->
+  <div id="step-admin" class="hidden">
+    <div class="card">
+      <div class="card-title">互评汇总</div>
+      <div class="hint" id="admin-status"></div>
+      <div id="admin-table-wrap"></div>
+    </div>
+    <button class="btn btn-primary" id="export-btn" style="margin-bottom:10px;">导出数据（CSV）</button>
+    <button class="btn" id="copy-btn" style="background:#f5f7fa;color:#374151;border:1.5px solid #d8dee9;">复制明细（粘贴到 Excel）</button>
+    <div class="footer-note">此页面仅组长可见，请勿外传。</div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   配置区
+   ========================================================= */
+const CONFIG = {
+  // kvdb.io bucket —— 存储所有评分数据
+  KV_BUCKET: "5mYWyB5u7P4Lz4R5Yfwjtw",
+  KV_KEY: "peer-eval-ac-2026",
+  // 组员名单（按群成员顺序）
+  MEMBERS: [
+    "陈实", "杨竣程", "曾悦", "胡端鹏", "何光远", "徐梦瑶", "赵梦迪",
+    "田想", "吴祎", "郑浩然", "窦怡滢", "邓家敏", "吴萌萌"
+  ],
+  // 管理口令：URL 加 ?admin=1 进入汇总页
+  DECIMALS: 1,
+};
+
+/* =========================================================
+   工具函数
+   ========================================================= */
+const $ = (id) => document.getElementById(id);
+
+function kvUrl() {
+  return `https://kvdb.io/${CONFIG.KV_BUCKET}/${CONFIG.KV_KEY}`;
+}
+
+/** 每个评分人使用独立 key，彻底避免并发覆盖 */
+function keyOf(name) {
+  return CONFIG.KV_KEY + "-" + encodeURIComponent(name);
+}
+
+/** 读取某人的评分记录；未提交返回 null */
+async function loadOne(name) {
+  try {
+    const res = await fetch(
+      `https://kvdb.io/${CONFIG.KV_BUCKET}/${keyOf(name)}?t=` + Date.now(),
+      { cache: "no-store" }
+    );
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error("读取失败 " + res.status);
+    const txt = await res.text();
+    if (!txt || !txt.trim()) return null;
+    return JSON.parse(txt);
+  } catch (e) {
+    console.warn("loadOne error:", name, e);
+    return null;
+  }
+}
+
+/** 写入某人的评分记录（已存在则拒绝，保证只提交一次） */
+async function saveOne(name, scores) {
+  const url = `https://kvdb.io/${CONFIG.KV_BUCKET}/${keyOf(name)}`;
+  // 先确认未提交
+  const exist = await loadOne(name);
+  if (exist) throw new Error("该名字已提交过，请勿重复提交");
+
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(scores),
+  });
+  if (!res.ok) throw new Error("保存失败 " + res.status);
+}
+
+/** 读取全部评分记录，返回 {raterName: {targetName: score}} */
+async function loadData() {
+  const results = await Promise.all(
+    CONFIG.MEMBERS.map(async (n) => [n, await loadOne(n)])
+  );
+  const out = {};
+  results.forEach(([n, v]) => { if (v) out[n] = v; });
+  return out;
+}
+
+/** 去极值平均：去掉一个最高、一个最低，剩余取平均，保留一位小数 */
+function trimmedMean(scores) {
+  if (!scores.length) return null;
+  let arr = scores.slice().sort((a, b) => a - b);
+  if (arr.length > 2) {
+    arr = arr.slice(1, -1);   // 去掉首尾各一个
+  }
+  const avg = arr.reduce((s, v) => s + v, 0) / arr.length;
+  const f = Math.pow(10, CONFIG.DECIMALS);
+  return Math.round(avg * f) / f;
+}
+
+/* =========================================================
+   页面状态
+   ========================================================= */
+let state = {
+  rater: null,        // 当前评分人
+  data: {},           // 全部数据
+  scores: {},         // 当前打分 {target: value}
+};
+
+/* =========================================================
+   初始化
+   ========================================================= */
+async function init() {
+  // 管理页
+  const params = new URLSearchParams(location.search);
+  if (params.get("admin") === "1") {
+    $("step-choose").classList.add("hidden");
+    $("step-admin").classList.remove("hidden");
+    await renderAdmin();
+    return;
+  }
+
+  state.data = await loadData();
+  renderNameGrid();
+}
+
+function renderNameGrid() {
+  const grid = $("name-grid");
+  grid.innerHTML = "";
+  CONFIG.MEMBERS.forEach((name) => {
+    const btn = document.createElement("button");
+    btn.className = "name-btn";
+    btn.textContent = name;
+    btn.onclick = () => selectRater(name);
+    grid.appendChild(btn);
+  });
+}
+
+async function selectRater(name) {
+  state.rater = name;
+
+  // 只查询自己是否已提交
+  const mine = await loadOne(name);
+
+  if (mine) {
+    // 已提交
+    $("already-tip").classList.remove("hidden");
+    $("already-tip").textContent =
+      `「${name}」已提交过评分（共 ${Object.keys(mine).length} 条），本次提交已锁定。如需修改请联系组长。`;
+    document.querySelectorAll(".name-btn").forEach((b) => {
+      if (b.textContent === name) b.classList.add("selected");
+    });
+    return;
+  }
+
+  $("already-tip").classList.add("hidden");
+  $("step-choose").classList.add("hidden");
+  $("step-score").classList.remove("hidden");
+  $("cur-name").textContent = name;
+
+  state.scores = {};
+  renderScoreList();
+  window.scrollTo(0, 0);
+}
+
+function renderScoreList() {
+  const list = $("score-list");
+  list.innerHTML = "";
+  const others = CONFIG.MEMBERS.filter((n) => n !== state.rater);
+
+  others.forEach((name) => {
+    const row = document.createElement("div");
+    row.className = "score-row";
+
+    const label = document.createElement("div");
+    label.className = "score-name";
+    label.textContent = name;
+
+    const wrapDiv = document.createElement("div");
+    wrapDiv.className = "score-input-wrap";
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "0";
+    input.max = "100";
+    input.step = "0.1";
+    input.placeholder = "0 ~ 100";
+    input.dataset.name = name;
+    input.oninput = (e) => {
+      const v = e.target.value;
+      input.classList.remove("invalid");
+      if (v === "") {
+        delete state.scores[name];
+      } else {
+        const num = parseFloat(v);
+        if (isNaN(num) || num < 0 || num > 100) {
+          input.classList.add("invalid");
+          delete state.scores[name];
+        } else {
+          state.scores[name] = num;
+        }
+      }
+      updateProgress();
+    };
+    input.onblur = (e) => {
+      const v = e.target.value;
+      if (v !== "" && !e.target.classList.contains("invalid")) {
+        // 统一显示为一位小数
+        e.target.value = parseFloat(v).toFixed(CONFIG.DECIMALS);
+      }
+    };
+
+    wrapDiv.appendChild(input);
+    row.appendChild(label);
+    row.appendChild(wrapDiv);
+    list.appendChild(row);
+  });
+
+  updateProgress();
+}
+
+function updateProgress() {
+  const total = CONFIG.MEMBERS.length - 1;
+  const done = Object.keys(state.scores).length;
+  $("progress-text").textContent = `已完成 ${done} / ${total}`;
+  $("submit-btn").disabled = done !== total;
+}
+
+/* =========================================================
+   提交
+   ========================================================= */
+$("submit-btn").onclick = async () => {
+  const btn = $("submit-btn");
+  const err = $("submit-error");
+  err.classList.add("hidden");
+
+  const total = CONFIG.MEMBERS.length - 1;
+  if (Object.keys(state.scores).length !== total) {
+    err.textContent = "还有组员未打分，请填写完整后再提交。";
+    err.classList.remove("hidden");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "提交中…";
+
+  try {
+    await saveOne(state.rater, state.scores);
+
+    $("step-score").classList.add("hidden");
+    $("step-done").classList.remove("hidden");
+    window.scrollTo(0, 0);
+  } catch (e) {
+    err.textContent = "提交失败：" + e.message + "，请检查网络后重试。";
+    err.classList.remove("hidden");
+    btn.disabled = false;
+    btn.textContent = "提交评分";
+  }
+};
+
+$("reselect").onclick = (e) => {
+  e.preventDefault();
+  state.rater = null;
+  state.scores = {};
+  $("step-score").classList.add("hidden");
+  $("step-choose").classList.remove("hidden");
+  document.querySelectorAll(".name-btn").forEach((b) => b.classList.remove("selected"));
+  window.scrollTo(0, 0);
+};
+
+/* =========================================================
+   管理端：汇总
+   ========================================================= */
+async function renderAdmin() {
+  const data = await loadData();
+  const submitted = Object.keys(data).length;
+  const total = CONFIG.MEMBERS.length;
+
+  $("admin-status").innerHTML =
+    `已提交 <strong style="color:#1e5aa8;">${submitted}</strong> / ${total} 人`;
+
+  // 计算每人收到的评分
+  const received = {};   // {name: [scores]}
+  CONFIG.MEMBERS.forEach((n) => (received[n] = []));
+  Object.entries(data).forEach(([rater, targets]) => {
+    Object.entries(targets).forEach(([t, s]) => {
+      if (received[t]) received[t].push(s);
+    });
+  });
+
+  // 构建表格
+  let html = `<table class="summary-table">
+    <thead><tr>
+      <th style="text-align:left;">姓名</th>
+      <th>收到份数</th>
+      <th>互评均分</th>
+    </tr></thead><tbody>`;
+
+  CONFIG.MEMBERS.forEach((n) => {
+    const arr = received[n];
+    const avg = trimmedMean(arr);
+    html += `<tr>
+      <td class="name">${n}</td>
+      <td>${arr.length}</td>
+      <td class="final">${avg === null ? "—" : avg.toFixed(CONFIG.DECIMALS)}</td>
+    </tr>`;
+  });
+  html += "</tbody></table>";
+
+  $("admin-table-wrap").innerHTML = html;
+  window.__adminData = { data, received };
+}
+
+/* 导出 CSV */
+$("export-btn").onclick = () => {
+  const { data, received } = window.__adminData || {};
+  if (!data) return;
+
+  const rows = [];
+  // 第一部分：明细矩阵（行=评分人，列=被评人）
+  rows.push(["评分人 \\ 被评人", ...CONFIG.MEMBERS].join(","));
+  CONFIG.MEMBERS.forEach((rater) => {
+    const line = [rater];
+    CONFIG.MEMBERS.forEach((target) => {
+      if (rater === target) {
+        line.push("—");
+      } else {
+        const v = data[rater] && data[rater][target];
+        line.push(v === undefined ? "" : v);
+      }
+    });
+    rows.push(line.join(","));
+  });
+
+  rows.push("");
+  rows.push(["姓名", "收到份数", "互评均分（去极值）"].join(","));
+  CONFIG.MEMBERS.forEach((n) => {
+    const avg = trimmedMean(received[n]);
+    rows.push([n, received[n].length, avg === null ? "" : avg.toFixed(CONFIG.DECIMALS)].join(","));
+  });
+
+  const csv = "\uFEFF" + rows.join("\n");   // BOM 防 Excel 乱码
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "小组互评汇总.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+/* 复制明细到剪贴板（制表符分隔，可直接粘贴 Excel） */
+$("copy-btn").onclick = async () => {
+  const { data, received } = window.__adminData || {};
+  if (!data) return;
+
+  const lines = [];
+  lines.push(["评分人", ...CONFIG.MEMBERS, "收到份数", "互评均分"].join("\t"));
+  CONFIG.MEMBERS.forEach((rater) => {
+    const line = [rater];
+    CONFIG.MEMBERS.forEach((target) => {
+      if (rater === target) line.push("—");
+      else {
+        const v = data[rater] && data[rater][target];
+        line.push(v === undefined ? "" : v);
+      }
+    });
+    const avg = trimmedMean(received[rater]);
+    line.push(received[rater].length);
+    line.push(avg === null ? "" : avg.toFixed(CONFIG.DECIMALS));
+    lines.push(line.join("\t"));
+  });
+
+  try {
+    await navigator.clipboard.writeText(lines.join("\n"));
+    $("copy-btn").textContent = "已复制 ✓";
+    setTimeout(() => ($("copy-btn").textContent = "复制明细（粘贴到 Excel）"), 2000);
+  } catch (e) {
+    alert("复制失败，请改用导出 CSV。");
+  }
+};
+
+/* 启动 */
+init();
+</script>
+</body>
+</html>
