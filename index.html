@@ -710,7 +710,8 @@ async function renderAdmin() {
     `<div class="card-title">评分明细（行 = 评分人，列 = 被评人）</div>
      <div class="hint" style="margin-bottom:10px;">
        灰色行为未提交；<span class="zero">红色 0 分</span>、
-       <span class="full">蓝色 100 分</span> 已高亮，便于检查异常。
+       <span class="full">蓝色 100 分</span> 已高亮，便于检查异常。<br>
+       <strong>表格可左右滑动</strong>查看全部 13 列；导出的 CSV 含完整数据。
      </div>` + m + html;
 
   window.__adminData = { data, received };
