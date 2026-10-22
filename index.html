@@ -243,7 +243,7 @@
     </div>
 
     <div id="already-tip" class="alert alert-warn hidden">
-      你已提交过评分，本次提交已锁定。如需修改，请联系组长。
+      你已提交过评分，可在此修改后重新提交。
     </div>
   </div>
 
@@ -267,7 +267,7 @@
 
     <button class="btn btn-primary" id="submit-btn" disabled>提交评分</button>
     <div class="footer-note">
-      提交后不可修改，请确认无误。<br>
+      提交后仍可再次进入修改，以最后一次提交为准。<br>
       评分仅用于组内互评统计，不会公开个人打分明细。
     </div>
   </div>
@@ -277,8 +277,8 @@
     <div class="card">
       <div class="done-screen">
         <div class="done-icon">✓</div>
-        <h2>提交成功</h2>
-        <p>感谢你的参与，你的评分已记录。<br>可以关闭此页面。</p>
+        <h2 id="done-title">提交成功</h2>
+        <p>感谢你的参与，你的评分已记录。<br>若需修改，重新点开链接选择自己的名字即可。</p>
       </div>
     </div>
   </div>
@@ -346,13 +346,9 @@ async function loadOne(name) {
   }
 }
 
-/** 写入某人的评分记录（已存在则拒绝，保证只提交一次） */
+/** 写入某人的评分记录（允许覆盖，以最后一次提交为准） */
 async function saveOne(name, scores) {
   const url = `https://kvdb.io/${CONFIG.KV_BUCKET}/${keyOf(name)}`;
-  // 先确认未提交
-  const exist = await loadOne(name);
-  if (exist) throw new Error("该名字已提交过，请勿重复提交");
-
   const res = await fetch(url, {
     method: "PUT",
     headers: { "Content-Type": "text/plain" },
@@ -390,6 +386,7 @@ let state = {
   rater: null,        // 当前评分人
   data: {},           // 全部数据
   scores: {},         // 当前打分 {target: value}
+  isEdit: false,      // 是否为修改已提交的记录
 };
 
 /* =========================================================
@@ -424,26 +421,28 @@ function renderNameGrid() {
 async function selectRater(name) {
   state.rater = name;
 
-  // 只查询自己是否已提交
+  // 查询是否已提交过
   const mine = await loadOne(name);
 
+  state.isEdit = !!mine;
+  // 已提交则预填原分数，允许修改后重新提交
   if (mine) {
-    // 已提交
     $("already-tip").classList.remove("hidden");
     $("already-tip").textContent =
-      `「${name}」已提交过评分（共 ${Object.keys(mine).length} 条），本次提交已锁定。如需修改请联系组长。`;
-    document.querySelectorAll(".name-btn").forEach((b) => {
-      if (b.textContent === name) b.classList.add("selected");
-    });
-    return;
+      `「${name}」已提交过评分，下面已载入你上次填写的分数。` +
+      `修改后重新提交即可覆盖，以最后一次提交为准。`;
+    state.scores = {};
+    Object.entries(mine).forEach(([t, v]) => { state.scores[t] = v; });
+  } else {
+    $("already-tip").classList.add("hidden");
+    state.scores = {};
   }
 
-  $("already-tip").classList.add("hidden");
   $("step-choose").classList.add("hidden");
   $("step-score").classList.remove("hidden");
   $("cur-name").textContent = name;
+  $("submit-btn").textContent = mine ? "保存修改" : "提交评分";
 
-  state.scores = {};
   renderScoreList();
   window.scrollTo(0, 0);
 }
@@ -471,6 +470,10 @@ function renderScoreList() {
     input.step = "0.1";
     input.placeholder = "0 ~ 100";
     input.dataset.name = name;
+    // 已提交过的分数直接回填
+    if (state.scores[name] !== undefined) {
+      input.value = Number(state.scores[name]).toFixed(CONFIG.DECIMALS);
+    }
     input.oninput = (e) => {
       const v = e.target.value;
       input.classList.remove("invalid");
@@ -534,12 +537,13 @@ $("submit-btn").onclick = async () => {
 
     $("step-score").classList.add("hidden");
     $("step-done").classList.remove("hidden");
+    $("done-title").textContent = state.isEdit ? "修改已保存" : "提交成功";
     window.scrollTo(0, 0);
   } catch (e) {
     err.textContent = "提交失败：" + e.message + "，请检查网络后重试。";
     err.classList.remove("hidden");
     btn.disabled = false;
-    btn.textContent = "提交评分";
+    btn.textContent = state.isEdit ? "保存修改" : "提交评分";
   }
 };
 
@@ -547,6 +551,7 @@ $("reselect").onclick = (e) => {
   e.preventDefault();
   state.rater = null;
   state.scores = {};
+  state.isEdit = false;
   $("step-score").classList.add("hidden");
   $("step-choose").classList.remove("hidden");
   document.querySelectorAll(".name-btn").forEach((b) => b.classList.remove("selected"));
